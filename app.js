@@ -12,14 +12,7 @@ if (!GOOGLE_PASSWORD || !GOOGLE_LOGIN) {
   throw new Error('No login data!');
 }
 
-(async () => {
-  const browser = await puppeteer.launch({
-    headless: false,
-  });
-  const page = await browser.newPage();
-  await page.setViewport({width: 1366, height: 768})
-  await page.goto('https://badoo.com');
-
+const googleLogin = async (page) => {
   const href = await page.evaluate(() => document.querySelector('a[href*="https://badoo.com/google/"]').href);
  
   await page.goto(href);
@@ -37,6 +30,18 @@ if (!GOOGLE_PASSWORD || !GOOGLE_LOGIN) {
   await wait(5000);
 
   await page.goto('https://badoo.com');
+}
+
+// main
+(async () => {
+  const browser = await puppeteer.launch({
+    headless: false,
+  });
+  const page = await browser.newPage();
+  await page.setViewport({width: 1366, height: 768})
+  await page.goto('https://badoo.com');
+
+  await googleLogin(page);
 
   await wait(5000);
   await browser.close();
