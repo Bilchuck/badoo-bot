@@ -1,4 +1,6 @@
 const puppeteer = require('puppeteer');
+const { existsSync } = require('fs');
+const jsonfile = require('jsonfile');
 
 const wait = t => new Promise((r) => {
   setTimeout(r,t);
@@ -11,6 +13,8 @@ if (!GOOGLE_PASSWORD || !GOOGLE_LOGIN) {
   console.error('No login data!');
   throw new Error('No login data!');
 }
+
+const cookiesFilePath = './cookies.json';
 
 const googleLogin = async (page) => {
   const href = await page.evaluate(() => document.querySelector('a[href*="https://badoo.com/google/"]').href);
@@ -30,6 +34,17 @@ const googleLogin = async (page) => {
   await wait(5000);
 
   await page.goto('https://badoo.com');
+
+  // Save Session Cookies
+  const cookiesObject = await page.cookies()
+  // Write cookies to temp file to be used in other profile pages
+  jsonfile.writeFile(cookiesFilePath, cookiesObject, { spaces: 2 },
+  function(err) { 
+    if (err) {
+    console.log('The file could not be written.', err)
+    }
+    console.log('Session has been successfully saved')
+  });
 }
 
 // main
@@ -41,7 +56,21 @@ const googleLogin = async (page) => {
   await page.setViewport({width: 1366, height: 768})
   await page.goto('https://badoo.com');
 
-  await googleLogin(page);
+  const previousSession = existsSync(cookiesFilePath)
+  if (previousSession) {
+    // If file exist load the cookies
+    const cookiesArr = require(cookiesFilePath)
+    if (cookiesArr.length !== 0) {
+      for (let cookie of cookiesArr) {
+        await page.setCookie(cookie)
+      }
+      console.log('Session has been loaded in the browser');
+      await page.goto('https://badoo.com');
+    }
+  } else {
+    await googleLogin(page);
+  }
+
 
   await wait(5000);
   await browser.close();
